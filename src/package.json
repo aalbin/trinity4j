@@ -1,0 +1,21 @@
+{
+  "name": "trinity4j",
+  "version": "1.0.0",
+  "description": "a framework for handling data in a neo4j databse using node",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "neo4j",
+    "database"
+  ],
+  "author": "Albin Nord Björlund",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.0.1",
+    "node-cache": "^3.2.1",
+    "request": "^2.74.0",
+    "uuid": "^3.0.1"
+  }
+}

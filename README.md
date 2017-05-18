@@ -62,7 +62,7 @@ there are a couple of defined data types that we use when interfacing with t4j:
 _Node_ is used when adding or modifying data confined in nodes
 example:
 ``` 
-new t4j.Node('User', 'id123');
+new t4j.Node('User', { id: 'id123', name: 'Bertil', occupation: 'Professional bowler' }});
 ```
 example: 
 ```

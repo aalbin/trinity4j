@@ -20,16 +20,16 @@ current limitations in this package includes only allowing single index ids for 
 ## adding a node
 ```
 var user = t4j.n.User('id1'),
-	dbset = t4j.DbSet(user);
+    dbset = t4j.DbSet(user);
 t4j.add(dbset, function(err,results){ ... });
 ```
 
 ## adding a relation to a second node
 ```
 var node1 = t4j.ref.User('id1'),
-	node2 = t4j.n.User('id2'),
-	relation = node1.relTo('FriendsWith', node2, { friendshipStrength: 99 }),
-	dbset = t4j.DbSet(relation);
+    node2 = t4j.n.User('id2'),
+    relation = node1.relTo('FriendsWith', node2, { friendshipStrength: 99 }),
+    dbset = t4j.DbSet(relation);
 t4j.add(dbset, function(err,results){ ... });
 // only the relation and node 2 will be added as node1 is defined as a Reference
 ```
@@ -39,7 +39,7 @@ t4j.add(dbset, function(err,results){ ... });
 // get existing node first, then modify existing data
 t4j.get({ User: ['id1'] }, function(err, dbset){
 	var user = dbset.getNode('User', 'id1'),
-		data = user.data;
+	    data = user.data;
 	data.description = 'has been updated';
 
 	user = t4j.n.User(data);
@@ -51,8 +51,8 @@ t4j.get({ User: ['id1'] }, function(err, dbset){
 ## get nodes by relation
 ```
 var user = t4j.ref.User('id1'),
-	lovers = t4j.ref.User.byRelation('InLoveWith').to(user).return();	// use to or from to define direction of relation, and chain the return command to the entity to output it in the result set
-var dbset = t4j.DbSet(user, lovers);
+    lovers = t4j.ref.User.byRelation('InLoveWith').to(user).return(),	// use to or from to define direction of relation, and chain the return command to the entity to output it in the result set
+    dbset = t4j.DbSet(user, lovers);
 t4j.get(dbset, function(err, results){ ... });
 ```
 
@@ -60,18 +60,30 @@ t4j.get(dbset, function(err, results){ ... });
 there are a couple of defined data types that we use when interfacing with t4j:
 
 _Node_ used when adding or modifying data confined in nodes
-example: new t4j.Node('Event', 'id123');
-example: new t4j.n.Event('id123');
+example:
+``` new t4j.Node('Event', 'id123');
+```
+example: 
+```new t4j.n.Event('id123');
+```
 
 _Reference_ used as reference, when modifying or adding other nodes or relations
-example: new t4j.Reference('Event', 'id123');
-example: new t4j.ref.Event('id123');
+example: 
+```new t4j.Reference('Event', 'id123');
+```
+example: 
+```new t4j.ref.Event('id123');
+```
 
 _Relation_ used to define relations between nodes and/or references
-example: node1.relTo('RelatesTo', node2);
+example: 
+```node1.relTo('RelatesTo', node2);
+```
 
 _DbSet_ the type used when committing changes to the database
-example: new t4j.DbSet([node1, relation]);
+example: 
+```new t4j.DbSet([node1, relation]);
+```
 
 ## get
 to get all nodes with label Event:

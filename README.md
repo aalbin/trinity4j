@@ -6,8 +6,8 @@ a declarative schema-based driver that makes working with a neo4j database throu
 using t4j directly:
 
 ```
-var trinity4j = require('trinity4j');
-var t4j = new trinity4j({
+var trinity4j = require('trinity4j'),
+	t4j = new trinity4j({
 		schema: ["User:email", "Group:id"],
 		connection: { host: 'localhost', port: '7474', username: 'neo4j', password: 'neo4j' }
 	});
@@ -19,17 +19,17 @@ current limitations in this package includes only allowing single index ids for 
 
 ## adding a node
 ```
-var user = t4j.n.User('id1');
-var dbset = t4j.DbSet(user);
+var user = t4j.n.User('id1'),
+	dbset = t4j.DbSet(user);
 t4j.add(dbset, function(err,results){ ... });
 ```
 
 ## adding a relation to a second node
 ```
-var node1 = t4j.ref.User('id1');
-var node2 = t4j.n.User('id2');
-var relation = node1.relTo('FriendsWith', node2, { friendshipStrength: 99 });
-var dbset = t4j.DbSet(relation);
+var node1 = t4j.ref.User('id1'),
+	node2 = t4j.n.User('id2'),
+	relation = node1.relTo('FriendsWith', node2, { friendshipStrength: 99 }),
+	dbset = t4j.DbSet(relation);
 t4j.add(dbset, function(err,results){ ... });
 // only the relation and node 2 will be added as node1 is defined as a Reference
 ```
@@ -38,8 +38,8 @@ t4j.add(dbset, function(err,results){ ... });
 ```
 // get existing node first, then modify existing data
 t4j.get({ User: ['id1'] }, function(err, dbset){
-	var user = dbset.getNode('User', 'id1');
-	var data = user.data;
+	var user = dbset.getNode('User', 'id1'),
+		data = user.data;
 	data.description = 'has been updated';
 
 	user = t4j.n.User(data);
@@ -50,8 +50,8 @@ t4j.get({ User: ['id1'] }, function(err, dbset){
 
 ## get nodes by relation
 ```
-var user = t4j.ref.User('id1');
-var lovers = t4j.ref.User.byRelation('InLoveWith').to(user).return();	// use to or from to define direction of relation, and chain the return command to the entity to output it in the result set
+var user = t4j.ref.User('id1'),
+	lovers = t4j.ref.User.byRelation('InLoveWith').to(user).return();	// use to or from to define direction of relation, and chain the return command to the entity to output it in the result set
 var dbset = t4j.DbSet(user, lovers);
 t4j.get(dbset, function(err, results){ ... });
 ```

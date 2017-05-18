@@ -1,8 +1,4 @@
 ﻿/* Data Provider for the t4j database interface
- * 
- * Lowest level data provider for the API
- * As a rule: only fetch data from here if the cache doesn't hold the data you're looking for
- * Also a rule: only call this module from the repository module, and generally never go deeper than the repository when fetching or storing data from the api application
  */
 
 var request = require('request');

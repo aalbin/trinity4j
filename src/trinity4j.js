@@ -3,13 +3,6 @@ var tc = require('./typecast/index');
 var async = require('async');
 var utils = require('./utils');
 
-// TODO: possibly add a debug flag to the add/set/get/del actions to activate returning query and neo_data - seems unnecessary in a production scenario
-
-/* Define a helper to simplify workign with DB
- * the intention is to remove the need to have one module for each type of data we work with, and one function for each interaction type for each label for each ... etc
- * an attempt to streamline get, add, modify and delete interactions with the neo4j database
- * I call it trinity because Neo 
- */
 module.exports = function (settings, init_callback) {
 	var trinity4j = this,
 		schema = { indices: {} },
@@ -96,8 +89,6 @@ module.exports = function (settings, init_callback) {
 		// mode = 'limited': return only requested nodes, relations and references to related nodes
 		// mode = 'minimal': return only requested nodes
 
-		// TODO: this.get should take a dbSet like the other functions, instead of getNodes, containing References rather than Nodes
-
 		if (logging === 'verbose' || logging === 'timing') var d = new Date();
 
 		trinity4j.get.getCypher(getNodes, function (queries, errors) {
@@ -161,7 +152,7 @@ module.exports = function (settings, init_callback) {
 	}
 
 	// will return nodes_deleted equal to attempted deletes, even if there was an error such as node still has relationships or similar
-	// in those cases, there will be an error message telling the user what went wrong - not optimal but what can I do? It's on Neo4j
+	// in those cases, there will be an error message telling the user what went wrong - not optimal but what can I do? The fault is on Neo4j
 	// also seems like it doesn't always return an error even if there were no deletes - possibly due to node not being found. What to do about that?
 	this.del = function (dbSet, callback, mode, logging) {
 		// dbSet instanceof DbSet

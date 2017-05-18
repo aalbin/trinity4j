@@ -61,28 +61,34 @@ there are a couple of defined data types that we use when interfacing with t4j:
 
 _Node_ used when adding or modifying data confined in nodes
 example:
-``` new t4j.Node('Event', 'id123');
+``` 
+new t4j.Node('Event', 'id123');
 ```
 example: 
-```new t4j.n.Event('id123');
+```
+new t4j.n.Event('id123');
 ```
 
 _Reference_ used as reference, when modifying or adding other nodes or relations
 example: 
-```new t4j.Reference('Event', 'id123');
+```
+new t4j.Reference('Event', 'id123');
 ```
 example: 
-```new t4j.ref.Event('id123');
+```
+new t4j.ref.Event('id123');
 ```
 
 _Relation_ used to define relations between nodes and/or references
 example: 
-```node1.relTo('RelatesTo', node2);
+```
+node1.relTo('RelatesTo', node2);
 ```
 
 _DbSet_ the type used when committing changes to the database
 example: 
-```new t4j.DbSet([node1, relation]);
+```
+new t4j.DbSet([node1, relation]);
 ```
 
 ## get

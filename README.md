@@ -1,9 +1,9 @@
 # Trinity4j
 
-a declarative schema-based driver that makes working with a neo4j database through node.js easy
+a declarative schema-based driver smoothifying node.js-neo4j integrations
 
 ## setup
-using t4j directly:
+declaring an instance of trinity4j:
 
 ```
 var trinity4j = require('trinity4j'),
@@ -14,8 +14,7 @@ var trinity4j = require('trinity4j'),
 ```
 
 the schema is defined by an array of Label:Id combinations, where nodes with the defined labels will be indexed in the specified identifier property.
-the schema and index is automatically defined if it doesn't exist when t4j is initiated in the above code example.
-current limitations in this package includes only allowing single index ids for labels and lack of directionless relations.
+the schema and indices are automatically added to neo4j if they don't exist when t4j is initiated.
 
 ## adding a node
 ```
@@ -56,7 +55,7 @@ var user = t4j.ref.User('id1'),
 t4j.get(dbset, function(err, results){ ... });
 ```
 
-## add tag to all messages sent by me to users in groups I am a member of
+## add tag to all messages sent by me to users in groups that I am a member of
 aka 'really complex example' 
 ```
 	// this is me, hi!
@@ -212,3 +211,5 @@ dbset.skip(5).take(5);
 * add support for the multiple-relations pattern (n.byRelation().from().andBy().to()...) on nodes - it's allready implemented on references because it's easier
 * make unit tests
 * find out whether the bug with multiple relations being added on double-matches is on my side or in neo4j (appears in the example "add tag to all messages sent by me to users in groups I am a member of" above)
+* make it possible to use multiple indices for individual labels, instead of the current 1:1 relationship between the two
+* implement support for directionless relations (ie. ()-[]-() type relations)

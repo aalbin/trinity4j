@@ -57,15 +57,31 @@ t4j.get(dbset, function(err, results){ ... });
 ```
 
 ## add tag to all messages sent by me to users in groups I am a member of
+aka 'really complex example' 
 ```
-var me = t4j.ref.User('albin@realdomain.com'),                  // this is me, hi!
-    group = t4j.ref.Group.byRelation('MemberOf').from(me),      // find all groups that I am a member of
-    members = t4j.ref.User.byRelation('MemberOf').to(group),    // find all members of those groups
-    messages = t4j.ref.Message.byRelation('SentTo').to(members).andBy('SentFrom').from(me),   //find all messages that I have sent to those users
-    tag = t4j.n.Tag('SentWhenDrunk').merge(),                   // reference the tag "SentWhenDrunk" - using merge() ensures that it will be added to db if it didn't exist before
-    addTags = tag.relTo('Tagged', messages),                    // connect the tag to all messages (oh dear)
-    dbset = t4j.DbSet(me, group, members, addTags);             // commit change to a dbset
-t4j.add(dbset, function (e, r) { /*...*/ //});                  // send query to neo4j and handle the result
+	// this is me, hi!
+var me = t4j.ref.User('albin@realdomain.com'),                  
+
+	// find all groups that I am a member of
+    group = t4j.ref.Group.byRelation('MemberOf').from(me),      
+
+	// find all members of those groups
+    members = t4j.ref.User.byRelation('MemberOf').to(group),    
+
+	// find all messages that I have sent to those users
+    messages = t4j.ref.Message.byRelation('SentTo').to(members).andBy('SentFrom').from(me),   
+                                                                
+	// reference the tag "SentWhenDrunk" - using merge() ensures that it will be added to db if it didn't exist before
+    tag = t4j.n.Tag('SentWhenDrunk').merge(),                   
+
+	// connect the tag to all messages
+    addTags = tag.relTo('Tagged', messages),                    
+
+	// commit change to a dbset
+    dbset = t4j.DbSet(me, group, members, addTags);             
+
+	// send query to neo4j and handle the result
+t4j.add(dbset, function (e, r) { /*...*/ });                    
 ```
 
 ## data types

@@ -56,6 +56,18 @@ var user = t4j.ref.User('id1'),
 t4j.get(dbset, function(err, results){ ... });
 ```
 
+## add tag to all messages sent by me to users in groups I am a member of
+```
+var me = t4j.ref.User('albin@realdomain.com'),                  // this is me, hi!
+    group = t4j.ref.Group.byRelation('MemberOf').from(me),      // find all groups that I am a member of
+    members = t4j.ref.User.byRelation('MemberOf').to(group),    // find all members of those groups
+    messages = t4j.ref.Message.byRelation('SentTo').to(members).andBy('SentFrom').from(me),   //find all messages that I have sent to those users
+    tag = t4j.n.Tag('SentWhenDrunk').merge(),                   // reference the tag "SentWhenDrunk" - using merge() ensures that it will be added to db if it didn't exist before
+    addTags = tag.relTo('Tagged', messages),                    // connect the tag to all messages (oh dear)
+    dbset = t4j.DbSet(me, group, members, addTags);             // commit change to a dbset
+t4j.add(dbset, function (e, r) { /*...*/ //});                  // send query to neo4j and handle the result
+```
+
 ## data types
 there are a couple of defined data types that we use when interfacing with t4j:
 
@@ -176,3 +188,11 @@ add paging to dbset
 ```
 dbset.skip(5).take(5);
 ```
+
+### TODO
+
+* remove custom prototypes for compatibility
+* merge from typecast to other standard casting library
+* add support for the multiple-relations pattern (n.byRelation().from().andBy().to()...) on nodes - it's allready implemented on references because it's easier
+* make unit tests
+* find out whether the bug with multiple relations being added on double-matches is on my side or in neo4j (appears in the example "add tag to all messages sent by me to users in groups I am a member of" above)

@@ -278,7 +278,9 @@ module.exports = function (settings, init_callback) {
 		var addReferenceByRelation = function (n) {
 			// add reference-by-relation to cypher using match on both vertices and relating them
 
-			cypher += "match " + referenceMatchByRelation(n) + "\n";
+			n.identifier.forEach((id) => {
+				cypher += "match " + referenceMatchByRelation(n, id) + "\n";
+			})
 		}
 
 		var addNode = function (n) {
@@ -378,7 +380,6 @@ module.exports = function (settings, init_callback) {
 
 		var handleNodeByRelation = function (n) {
 			var other = n.identifier.vertex, q = "", p = {}, set = "";
-
 
 			while (other && other.identifier instanceof IdentityByRelation) {
 				q = "match " + referenceMatchByRelation(other) + "\n" + q;
@@ -834,13 +835,14 @@ module.exports = function (settings, init_callback) {
 	}
 	var nodeRef = (n) => "(" + n.__key + ")";
 	var nodeMerge = (n) => '(' + n.__key + ':' + n.label + ' {' + getIndex(n.label).id + ':' + JSON.stringify(n.identifier) + '})' + onCreateSet(n);
-	var referenceMatchByRelation = function (n) {
-		var dir = n.identifier.direction;
+	var referenceMatchByRelation = function (n, id) {
+		id = id || n.identifier;
+		var dir = id.direction;
 		if (dir !== '<-' && dir !== '->') return "";
 
 		var matchThis = "(" + n.__key + ":" + n.label + ")",
-			matchThat = "(" + n.identifier.vertex.__key + ")";
-		return (dir === '<-' ? matchThat : matchThis) + "-[" + getRelationKey(n) + (n.identifier.type === type_all ? "" : ":" + n.identifier.type) + "]->" + (dir === '->' ? matchThat : matchThis);
+			matchThat = "(" + id.vertex.__key + ")";
+		return (dir === '<-' ? matchThat : matchThis) + "-[" + getRelationKey(n, id) + (id.type === type_all ? "" : ":" + id.type) + "]->" + (dir === '->' ? matchThat : matchThis);
 	}
 	var relationCreate = (r) => "[" + r.__key + (r.type === type_all ? "" : ":" + r.type) + (r.data ? " {" + r.__key + "}" : "") + "]";
 	var relationRef = (r) => "[" + r.__key + (r.type === type_all ? "" : ":" + r.type) + "]";
@@ -854,7 +856,7 @@ module.exports = function (settings, init_callback) {
 		return id;
 	}
 
-	var getRelationKey = (n) => n.__key + n.identifier.vertex.__key;
+	var getRelationKey = (n, id) => { id = id || n.identifier; return n.__key + id.vertex.__key; }
 
 
 	var addRelations = function (node) {
@@ -912,16 +914,25 @@ module.exports = function (settings, init_callback) {
 		if (node instanceof Node || node instanceof Reference)
 			return function (type, data) {
 				return {
-					to: function (target) {
-						node.identifier = new IdentityByRelation(type, target, '->', data);
-						return node;
-					},
-					from: function (target) {
-						node.identifier = new IdentityByRelation(type, target, '<-', data);
-						return node;
-					}
+					to: byRelToOrFrom(node, type, data, '->'),
+					from: byRelToOrFrom(node, type, data, '<-')
 				}
 			}
+	}
+
+	var byRelToOrFrom = function (node, type, data, direction) {
+		return function (target) {
+			var ibr = new IdentityByRelation(type, target, direction, data);
+			if (node.identifier instanceof IdentityByRelation) {
+				node.identifier = [node.identifier];
+				node.identifier.push(ibr);
+			}
+			else {
+				node.identifier = ibr;
+			}
+			node.andBy = nodeByRelation(node);
+			return node;
+		}
 	}
 
 	var nodeById = function (node) {
@@ -955,7 +966,7 @@ module.exports = function (settings, init_callback) {
 	var iterateDbSet = function (dbSet, refHandler, refByRelHandler, nodeHandler, nodeByRelHandler, bundleHandler, relHandler, returnHandler, callback) {
 		// dbSet instanceof DbSet
 		// refHandler(n);
-		// refByRelHandler(n);
+		// refByRelHandler(n);			// reference.identifier will be an array when sent to this handler (but not when sent to the nodeByRelHandlern)
 		// nodeHandler(n);
 		// bundleHandler(r,fr,to);		// bundles nodes that haven't yet been handled and/or references that have been handled with relations that have not yet been handled
 		// relHandler(n);
@@ -993,11 +1004,15 @@ module.exports = function (settings, init_callback) {
 				}
 
 				if (n instanceof Reference) {
-					if (n.identifier instanceof IdentityByRelation && tc.verify.is(refByRelHandler, Function)) {
-						if (all.indexOf(n.identifier.vertex) >= 0) {
-							all.splice(all.indexOf(n.identifier.vertex) + 1, 0, n);	// reinsert n after other vertex if other vertex has not yet been handled
-						}
-						else {
+					console.log('handling ref ' + n.__key);
+					n.identifier = n.identifier instanceof IdentityByRelation ? [n.identifier] : n.identifier;
+					if (tc.verify.is(n.identifier, Array) && tc.verify.is(refByRelHandler, Function)) {
+						if (!n.identifier.some((id) => {
+							if (all.indexOf(n.identifier.vertex) >= 0) {
+								all.splice(all.indexOf(n.identifier.vertex) + 1, 0, n);	// reinsert n after other vertex if other vertex has not yet been handled
+								return true;
+							}
+						})) {	// if some iteration of identifier short circuits (ie. it discovers it needs to happen after another vertex), we will not go forward yet
 							refByRelHandler(n);
 						}
 					}

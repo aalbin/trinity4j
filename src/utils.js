@@ -61,3 +61,50 @@ module.exports = new (function () {
 	}
 
 })();
+
+Array.prototype.where = function (wh) {
+	var filtered = [];
+	if (tc.verify.is(wh, Function))
+		this.forEach(function (e) {
+			if (wh(e))
+				filtered.push(e);
+		});
+	return filtered;
+}
+
+Array.prototype.select = function (sel) {
+	var selected = [];
+	if (tc.verify.is(sel, Function))
+		this.forEach(function (e) {
+			selected.push(sel(e));
+		});
+	return selected;
+}
+
+Array.prototype.pushMultiple = function (array) {
+	if (!tc.verify.is(array, Array)) return;
+	var me = this;
+	array.forEach(function (e) { me.push(e); });
+}
+
+Array.prototype.first = function () {
+	if (this.length === 0)
+		return null;
+	return this[0];
+}
+
+Array.prototype.all = function (condition) {
+	if (!tc.verify.is(condition, Function)) return false;
+	for (var i = 0; i < this.length; i++) {
+		if (!condition(this[i])) return false;
+	}
+	return true;
+}
+
+Array.prototype.any = function(condition){
+	if (!tc.verify.is(condition, Function)) return false;
+	for (var i = 0; i < this.length; i++) {
+		if (condition(this[i])) return true;
+	}
+	return false;
+}

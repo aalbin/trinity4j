@@ -2,7 +2,7 @@
   "name": "trinity4j",
   "version": "1.0.0",
   "description": "a framework for handling data in a neo4j databse using node",
-  "main": "index.js",
+  "main": "trinity4j.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

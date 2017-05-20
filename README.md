@@ -143,7 +143,7 @@ var u = t4j.ref.User('user@email.com'),
 callback signature:
 errors, dbset, queries, neo_error
 
-_example dbset:_
+_example output dbset:_
 ```
 {
 	nodes: [
@@ -155,9 +155,9 @@ _example dbset:_
 	],
 	relations:[
 		{
-			from: {},
+			from: Node/Reference,
 			type: 'MemberOf', // relation label
-			to:{},
+			to: Node/Reference,
 			data: { /* deserialized JSON data */ }
 		}
 	],

@@ -140,11 +140,101 @@ var u = t4j.ref.User('user@email.com'),
     dbset = t4j.get(t4j.DbSet(u, e), function(errors, dbset) {...}, mode, verbosity);
 ```
 
+callback signature:
+errors, dbset, queries, neo_error
+
+_example dbset:_
+```
+{
+	nodes: [
+		{
+			label: 'User',
+			data: { /* deserialized JSON data */ },
+			identifier: 'albin@realdomain.com'
+		}
+	],
+	relations:[
+		{
+			from: {},
+			type: 'MemberOf', // relation label
+			to:{},
+			data: { /* deserialized JSON data */ }
+		}
+	],
+	getNodes: function(label) {
+		/* returns an array of Nodes matching label */
+	},
+	getNode: function() {
+		/* returns a single Node matching a node reference in either one parameter like so: 'Label:ID' or split in two parameters like so: 'Label', 'ID' */
+	},
+	dump: function() {
+		/* shifts, or dumps, the contents of the dataset one item at a time starting with nodes and ending with relations - will return undefined when there are no more contents left */
+	}
+}
+```
+
 ## set
+
+callback signature:
+errors, stats, queries, neo_error
+
+_example stats:_
+```
+{ contains_updates: true,
+  nodes_created: 1,
+  nodes_deleted: 0,
+  properties_set: 1,
+  relationships_created: 4,
+  relationship_deleted: 0,
+  labels_added: 1,
+  labels_removed: 0,
+  indexes_added: 0,
+  indexes_removed: 0,
+  constraints_added: 0,
+  constraints_removed: 0 }
+```
 
 ## add
 
+callback signature:
+errors, stats, [{ query: cypher, params: params }], neo_error
+
+_example stats:_
+```
+{ contains_updates: true,
+  nodes_created: 1,
+  nodes_deleted: 0,
+  properties_set: 1,
+  relationships_created: 4,
+  relationship_deleted: 0,
+  labels_added: 1,
+  labels_removed: 0,
+  indexes_added: 0,
+  indexes_removed: 0,
+  constraints_added: 0,
+  constraints_removed: 0 }
+```
+
 ## del
+
+callback signature:
+errors, stats, queries, neo_error
+
+_example stats:_
+```
+{ contains_updates: true,
+  nodes_created: 1,
+  nodes_deleted: 0,
+  properties_set: 1,
+  relationships_created: 4,
+  relationship_deleted: 0,
+  labels_added: 1,
+  labels_removed: 0,
+  indexes_added: 0,
+  indexes_removed: 0,
+  constraints_added: 0,
+  constraints_removed: 0 }
+```
 
 ## relations
 add relation from node n to node t (works on both nodes an references):
@@ -206,6 +296,7 @@ dbset.skip(5).take(5);
 
 ### TODO
 
+* include skip & take values in the output dataset when using get (it is already supported when using dataset as argument for get)
 * remove custom prototypes for compatibility
 * merge from typecast to other standard casting library
 * add support for the multiple-relations pattern (n.byRelation().from().andBy().to()...) on nodes - it's allready implemented on references because it's easier

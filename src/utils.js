@@ -60,51 +60,53 @@ module.exports = new (function () {
 		return false;
 	}
 
+	this.linq = {
+		using: function (array) {
+			return {
+				where: function (condition) {
+					var filtered = [];
+					if (tc.verify.is(condition, Function))
+						array.forEach(function (e) {
+							if (condition(e))
+								filtered.push(e);
+						});
+					return filtered;
+				},
+				all: function (condition) {
+					if (!tc.verify.is(condition, Function)) return false;
+					for (var i = 0; i < array.length; i++) {
+						if (!condition(array[i])) return false;
+					}
+					return true;
+				},
+				any: function (condition) {
+					if (!tc.verify.is(condition, Function)) return false;
+					for (var i = 0; i < array.length; i++) {
+						if (condition(array[i])) return true;
+					}
+					return false;
+				},
+				select: function (condition) {
+					var selected = [];
+					if (tc.verify.is(condition, Function))
+						array.forEach(function (e) {
+							selected.push(condition(e));
+						});
+					return selected;
+				},
+				first: function (condition) {
+					if (array.length === 0)
+						return null;
+					return array[0];
+				},
+				pushMultiple = function (other) {
+					if (!tc.verify.is(other, Array)) return;
+					other.forEach(function (e) {
+						array.push(e);
+					});
+				}
+			}
+		}
+	}
+
 })();
-
-Array.prototype.where = function (wh) {
-	var filtered = [];
-	if (tc.verify.is(wh, Function))
-		this.forEach(function (e) {
-			if (wh(e))
-				filtered.push(e);
-		});
-	return filtered;
-}
-
-Array.prototype.select = function (sel) {
-	var selected = [];
-	if (tc.verify.is(sel, Function))
-		this.forEach(function (e) {
-			selected.push(sel(e));
-		});
-	return selected;
-}
-
-Array.prototype.pushMultiple = function (array) {
-	if (!tc.verify.is(array, Array)) return;
-	var me = this;
-	array.forEach(function (e) { me.push(e); });
-}
-
-Array.prototype.first = function () {
-	if (this.length === 0)
-		return null;
-	return this[0];
-}
-
-Array.prototype.all = function (condition) {
-	if (!tc.verify.is(condition, Function)) return false;
-	for (var i = 0; i < this.length; i++) {
-		if (!condition(this[i])) return false;
-	}
-	return true;
-}
-
-Array.prototype.any = function(condition){
-	if (!tc.verify.is(condition, Function)) return false;
-	for (var i = 0; i < this.length; i++) {
-		if (condition(this[i])) return true;
-	}
-	return false;
-}

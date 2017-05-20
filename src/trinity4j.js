@@ -1,7 +1,8 @@
 ﻿var n4j = require('./neo4j');
 var tc = require('./typecast/index');
 var async = require('async');
-var utils = require('./utils');
+var utils = require('./utils'),
+	linq = utils.linq;
 
 module.exports = function (settings, init_callback) {
 	var trinity4j = this,
@@ -304,7 +305,7 @@ module.exports = function (settings, init_callback) {
 		var addBundle = function (r, fr, to) {
 			// add combined fragment to cypher
 
-			if (merge || [r, fr, to].all((n) => n.commit_as_merge === true)) {
+			if (merge || linq.using([r, fr, to]).all((n) => n.commit_as_merge === true)) {
 				// everything should be merged
 				if (fr instanceof Node)
 					cypher += `merge ${nodeMerge(fr)}\n`;
@@ -312,7 +313,7 @@ module.exports = function (settings, init_callback) {
 					cypher += `merge ${nodeMerge(to)}\n`;
 				cypher += `merge ${nodeRef(fr)}-${relationRef(r)}->${nodeRef(to)}${onCreateSet(r)}\n`;
 			}
-			else if ([r, fr, to].any((n) => n.commit_as_merge === true)) {
+			else if (linq.using([r, fr, to]).any((n) => n.commit_as_merge === true)) {
 				// some things should be merged
 				if (fr.commit_as_merge === true)
 					cypher += `merge ${nodeMerge(fr)}\n`;
@@ -721,8 +722,8 @@ module.exports = function (settings, init_callback) {
 		})(nodes, relations);
 
 		this.getNodes = function (label) {
-			var nodes = dbset.nodes.where(function (n) { if (!label || n.label === label) return n; })
-				.concat(dbset.references.where(function (n) { if (!label || n.label === label) return n; }));
+			var nodes = linq.using(dbset.nodes).where(function (n) { if (!label || n.label === label) return n; })
+				.concat(linq.using(dbset.references).where(function (n) { if (!label || n.label === label) return n; }));
 			return nodes;
 		}
 
@@ -917,7 +918,7 @@ module.exports = function (settings, init_callback) {
 		return function (type) {
 			var rels = (self['<-'] || []).concat(self['->'] || []);
 			if (!type) return rels;
-			else return rels.where(function (r) { return r.type === type; });
+			else return linq.using(rels).where(function (r) { return r.type === type; });
 		}
 	}
 

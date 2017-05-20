@@ -297,7 +297,7 @@ dbset.skip(5).take(5);
 ### TODO
 
 * include skip & take values in the output dataset when using get (it is already supported when using dataset as argument for get)
-* remove custom prototypes for compatibility
+* ~~remove custom prototypes for compatibility~~
 * merge from typecast to other standard casting library
 * add support for the multiple-relations pattern (n.byRelation().from().andBy().to()...) on nodes - it's allready implemented on references because it's easier
 * make unit tests

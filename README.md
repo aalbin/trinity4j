@@ -178,7 +178,7 @@ use merge to match a node, and create it if it doesn't allready exist
 node.merge();
 ```
 
-turn node into reference (will only be used as reference in query; ie. it will not be added when used in add, will not be updated when used in set, will not be deleted when used in del)
+turn node into reference, meaning it will only be included for reference; ie. _it will not be added when used in add, will not be updated when used in set, will not be deleted when used in del_
 ```
 node.toRef();
 ```
@@ -213,3 +213,5 @@ dbset.skip(5).take(5);
 * find out whether the bug with multiple relations being added on double-matches is on my side or in neo4j (appears in the example "add tag to all messages sent by me to users in groups I am a member of" above)
 * make it possible to use multiple indices for individual labels, instead of the current 1:1 relationship between the two
 * implement support for directionless relations (ie. ()-[]-() type relations)
+* implement support for match by shortest path (https://neo4j.com/docs/developer-manual/current/cypher/clauses/match/#query-shortest-path)
+* implement relations with variable lengths (https://neo4j.com/docs/developer-manual/current/cypher/clauses/match/#varlength-rels)

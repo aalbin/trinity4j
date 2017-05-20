@@ -71,7 +71,7 @@ module.exports = function (settings, init_callback) {
 			trinity4j.ref[key] = (function (label) { return function (id, ret) { return trinity4j.Reference(label, id, ret); } })(key);
 			trinity4j.ref[key].all = new Reference(key, ref_all_id);
 			trinity4j.ref[key].byRelation = nodeByRelation(new Reference(key));
-			constraints.push({ query: "CREATE CONSTRAINT ON (n:" + key + ") ASSERT n." + schema.indices[key].id + " IS UNIQUE" });
+			constraints.push({ query: `CREATE CONSTRAINT ON (n:${key}) ASSERT n.${schema.indices[key].id} IS UNIQUE` });
 		}
 
 		// add constraints according to schema (will do nothing if constraints are allready available)
@@ -89,10 +89,14 @@ module.exports = function (settings, init_callback) {
 		// mode = 'limited': return only requested nodes, relations and references to related nodes
 		// mode = 'minimal': return only requested nodes
 
+		if (logging === 'verbose' && getNodes instanceof DbSet)
+			console.log(`*** GETTING DbSet: \n${ getNodes.toString()}`);
+
 		if (logging === 'verbose' || logging === 'timing') var d = new Date();
 
 		trinity4j.get.getCypher(getNodes, function (queries, errors) {
-			if (logging === 'verbose' || logging === 'timing') console.log(("[" + (new Date() - d) + "ms to build query]"));
+			if (logging === 'verbose' || logging === 'timing') 
+				console.log(`[${(new Date() - d)}ms to build query]`);
 
 			neo4j.runMultipleStatements({ queries: queries, resultDataContents: ['graph'] }, function (neo_error, body) {
 				// we will in some cases get more data than was asked for, considering the way the cypher is formatted (by necessity) - should we return all of it or just parts of it? what is most reasonable? 
@@ -111,12 +115,13 @@ module.exports = function (settings, init_callback) {
 		// mode 'merge': use merge to add new nodes and update existing ones
 
 		if (logging === 'verbose')
-			console.log('*** CREATING DbSet: \n' + dbSet.toString());
+			console.log(`*** CREATING DbSet: \n${ dbSet.toString()}`);
 
 		if (logging === 'verbose' || logging === 'timing') var d = new Date();
 
 		trinity4j.add.getCypher(dbSet, function (cypher, params, errors) {
-			if (logging === 'verbose' || logging === 'timing') console.log(("[" + (new Date() - d) + "ms to build query]"));
+			if (logging === 'verbose' || logging === 'timing') 
+				console.log(`[${(new Date() - d)}ms to build query]`);
 
 			neo4j.runCypherQuery(cypher, params, function (neo_error, results) {
 				errors = errors.concat(flattenNeoErrors(neo_error));
@@ -134,12 +139,13 @@ module.exports = function (settings, init_callback) {
 		// mode 'replace': replace all data with provided data
 
 		if (logging === 'verbose')
-			console.log('*** UPDATING DbSet: \n' + dbSet.toString());
+			console.log(`*** UPDATING DbSet: \n${ dbSet.toString()}`);
 
 		if (logging === 'verbose' || logging === 'timing') var d = new Date();
 
 		trinity4j.set.getCypher(dbSet, function (queries, errors) {
-			if (logging === 'verbose' || logging === 'timing') console.log(("[" + (new Date() - d) + "ms to build query]"));
+			if (logging === 'verbose' || logging === 'timing') 
+				console.log(`[${(new Date() - d)}ms to build query]`);
 
 			neo4j.runMultipleStatements({ queries: queries, includeStats: true }, function (neo_error, results) {
 				errors = errors.concat(flattenNeoErrors(neo_error));
@@ -163,12 +169,13 @@ module.exports = function (settings, init_callback) {
 
 
 		if (logging === 'verbose')
-			console.log('*** DELETING DbSet: \n' + dbSet.toString());
+			console.log(`*** DELETING DbSet: \n${ dbSet.toString()}`);
 
 		if (logging === 'verbose' || logging === 'timing') var d = new Date();
 
 		trinity4j.del.getCypher(dbSet, function (queries, errors) {
-			if (logging === 'verbose' || logging === 'timing') console.log(("[" + (new Date() - d) + "ms to build query]"));
+			if (logging === 'verbose' || logging === 'timing') 
+				console.log(`[${(new Date() - d)}ms to build query]`);
 
 			neo4j.runMultipleStatements({ queries: queries, includeStats: true }, function (neo_error, results) {
 				errors = errors.concat(flattenNeoErrors(neo_error));
@@ -192,14 +199,14 @@ module.exports = function (settings, init_callback) {
 				// add reference to cypher using match
 				// as the iterator should always handle references first it should not be a problem to make it this simple, in theory
 
-				cypher += "match " + nodeMatch(n) + "\n";
+				cypher += `match ${nodeMatch(n)}\n`;
 				params[n.__key] = n.identifier;
 			};
 
 			var addReferenceByRelation = function (n) {
 				// add reference-by-relation to cypher using match on both vertices and relating them
 
-				cypher += "match " + referenceMatchByRelation(n) + "\n";
+				cypher += `match ${referenceMatchByRelation(n)}\n`;
 			}
 
 			var addNode = null;
@@ -211,15 +218,15 @@ module.exports = function (settings, init_callback) {
 			var addRelation = null;
 
 			var returnHandler = function (keys) {
-				cypher += "return " + keys.join(',');
+				cypher += `return ${keys.join(',')}`;
 			}
 
 			iterateDbSet(getNodes, addReference, addReferenceByRelation, addNode, addNodeByRelation, addBundle, addRelation, returnHandler, function (errors) {
 				// callback
 
 				if (logging === 'verbose') {
-					console.log('\ncypher:', '\n' + cypher);
-					console.log(JSON.stringify(params, null, 2) + '\n');
+					console.log('\ncypher:', `\n${cypher}`);
+					console.log(`${JSON.stringify(params, null, 2)}\n`);
 				}
 
 				queries.push({ query: cypher, params: params });
@@ -234,11 +241,10 @@ module.exports = function (settings, init_callback) {
 				if (tc.verify.is(getNodes[key], Array)) {	// assume array
 
 					var index = getIndex(key).id,
-						cypher = "MATCH (n1:" + key + ")"
-							+ (tc.verify.is(getNodes[key], Array) && !tc.verify.nullOrEmpty(getNodes[key]) ? " where n1." + index + " in {identifiers}" : "")
-							+ (mode !== 'minimal' ? " optional match(n1)-[r]-(n2)" : "")
-							+ " RETURN n1 as node"
-							+ (mode !== 'minimal' ? ", collect({type:type(r),data:r,node: { label:labels(n2)[0],is_target:endnode(r)=n2,data:n2 }}) as relations" : "");
+						cypher = `MATCH (n1:${key})
+							${(tc.verify.is(getNodes[key], Array) && !tc.verify.nullOrEmpty(getNodes[key]) ? ` where n1.${index} in {identifiers}` : "")}
+							${(mode !== 'minimal' ? " optional match(n1)-[r]-(n2)" : "")} RETURN n1 as node
+							${(mode !== 'minimal' ? ", collect({type:type(r),data:r,node: { label:labels(n2)[0],is_target:endnode(r)=n2,data:n2 }}) as relations" : "")}`;
 
 					queries.push({ query: cypher, params: { identifiers: getNodes[key] } });
 				}
@@ -248,8 +254,8 @@ module.exports = function (settings, init_callback) {
 
 		if (logging === 'verbose') {
 			queries.forEach(function (q) {
-				console.log('\ncypher:', '\n' + q.query);
-				console.log(JSON.stringify(q.params, null, 2) + '\n');
+					console.log('\ncypher:', `\n${q.query}`);
+					console.log(`${JSON.stringify(q.params, null, 2)}\n`);
 			});
 		}
 
@@ -269,9 +275,9 @@ module.exports = function (settings, init_callback) {
 			// as the iterator should always handle references first it should not be a problem to make it this simple, in theory
 
 			if (merge || n.commit_as_merge === true)
-				cypher += 'merge ' + nodeMerge(n) + '\n';
+				cypher += `merge ${nodeMerge(n)}\n`;
 			else
-				cypher += "match " + nodeMatch(n) + "\n";
+				cypher += `match ${nodeMatch(n)}\n`;
 			params[n.__key] = n.identifier;
 		};
 
@@ -279,7 +285,7 @@ module.exports = function (settings, init_callback) {
 			// add reference-by-relation to cypher using match on both vertices and relating them
 
 			n.identifier.forEach((id) => {
-				cypher += "match " + referenceMatchByRelation(n, id) + "\n";
+				cypher += `match ${referenceMatchByRelation(n, id)}\n`;
 			})
 		}
 
@@ -287,9 +293,9 @@ module.exports = function (settings, init_callback) {
 			// add node to cypher
 
 			if (merge || n.commit_as_merge === true)
-				cypher += 'merge ' + nodeMerge(n) + '\n';
+				cypher += `merge ${nodeMerge(n)}\n`;
 			else
-				cypher += "create " + nodeCreate(n) + "\n";
+				cypher += `create ${nodeCreate(n)}\n`;
 			params[n.__key] = n.data;
 		};
 
@@ -301,27 +307,27 @@ module.exports = function (settings, init_callback) {
 			if (merge || [r, fr, to].all((n) => n.commit_as_merge === true)) {
 				// everything should be merged
 				if (fr instanceof Node)
-					cypher += 'merge ' + nodeMerge(fr) + '\n';
+					cypher += `merge ${nodeMerge(fr)}\n`;
 				if (to instanceof Node)
-					cypher += 'merge ' + nodeMerge(to) + '\n';
-				cypher += "merge " + nodeRef(fr) + "-" + relationRef(r) + "->" + nodeRef(to) + onCreateSet(r) + "\n";
+					cypher += `merge ${nodeMerge(to)}\n`;
+				cypher += `merge ${nodeRef(fr)}-${relationRef(r)}->${nodeRef(to)}${onCreateSet(r)}\n`;
 			}
 			else if ([r, fr, to].any((n) => n.commit_as_merge === true)) {
 				// some things should be merged
 				if (fr.commit_as_merge === true)
-					cypher += 'merge ' + nodeMerge(fr) + '\n';
+					cypher += `merge ${nodeMerge(fr)}\n`;
 				else if (fr instanceof Node)
-					cypher += 'create ' + nodeCreate(fr) + '\n';
+					cypher += `create ${nodeCreate(fr)}\n`;
 
 				if (to.commit_as_merge === true)
-					cypher += 'merge ' + nodeMerge(to) + '\n';
+					cypher += `merge ${nodeMerge(to)}\n`;
 				else if (to instanceof Node)
-					cypher += 'create ' + nodeCreate(to) + '\n';
+					cypher += `create ${nodeCreate(to)}\n`;
 
-				cypher += "merge " + nodeRef(fr) + "-" + relationRef(r) + "->" + nodeRef(to) + onCreateSet(r) + "\n";
+				cypher += `merge ${nodeRef(fr)}-${relationRef(r)}->${nodeRef(to)}${onCreateSet(r)}\n`;
 			}
 			else {
-				cypher += "create " + (fr instanceof Reference ? nodeRef(fr) : nodeCreate(fr)) + "-" + relationCreate(r) + "->" + (to instanceof Reference ? nodeRef(to) : nodeCreate(to)) + "\n";
+				cypher += `create ${(fr instanceof Reference ? nodeRef(fr) : nodeCreate(fr))}-${relationCreate(r)}->${(to instanceof Reference ? nodeRef(to) : nodeCreate(to))}\n`;
 
 				if (fr instanceof Node)
 					params[fr.__key] = fr.data;
@@ -334,23 +340,23 @@ module.exports = function (settings, init_callback) {
 		var addRelation = function (n) {
 			// add create relation fragment to cypher
 			if (merge || n.commit_as_merge) {
-				cypher += "merge " + nodeRef(n.from) + "-" + relationRef(n) + "->" + nodeRef(n.to) + onCreateSet(n) + "\n";
+				cypher += `merge ${nodeRef(n.from)}-${relationRef(n)}->${nodeRef(n.to)}${onCreateSet(n)}\n`;
 			} else {
-				cypher += "create " + nodeRef(n.from) + "-" + relationCreate(n) + "->" + nodeRef(n.to) + "\n";
+				cypher += `create ${nodeRef(n.from)}-${relationCreate(n)}->${nodeRef(n.to)}\n`;
 			}
 			params[n.__key] = n.data;
 		};
 
 		var returnHandler = function (keys) {
-			cypher += "return " + keys.join(',');
+			cypher += `return ${keys.join(',')}`;
 		}
 
 		iterateDbSet(dbSet, addReference, addReferenceByRelation, addNode, addNodeByRelation, addBundle, addRelation, returnHandler, function (errors) {
 			// callback
 
 			if (logging === 'verbose') {
-				console.log('\ncypher:', '\n' + cypher);
-				console.log(JSON.stringify(params, null, 2) + '\n');
+				console.log('\ncypher:', `\n${cypher}`);
+				console.log(`${JSON.stringify(params, null, 2)}\n`);
 			}
 
 			callback(cypher, params, errors);
@@ -369,11 +375,11 @@ module.exports = function (settings, init_callback) {
 
 		var handleNode = function (n) {
 			// handle node
-			var m = 'match ' + nodeMatch(n) + '\n',
-				s = 'set ' + n.__key + ' ' + operator + ' {' + n.__key + '$data}\n',
+			var m = `match ${nodeMatch(n)}\n`,
+				s = `set ${n.__key} ${operator} {${n.__key}$data}\n`,
 				p = {};
 			p[n.__key] = n.identifier;
-			p[n.__key + '$data'] = n.data;	// I intentionally don't flush the identifier from the data because replace mode would remove the indexer from the node if I did
+			p[`${n.__key}$data`] = n.data;	// I intentionally don't flush the identifier from the data because replace mode would remove the indexer from the node if I did
 
 			queries.push({ query: m + s, params: p });
 		};
@@ -382,37 +388,37 @@ module.exports = function (settings, init_callback) {
 			var other = n.identifier.vertex, q = "", p = {}, set = "";
 
 			while (other && other.identifier instanceof IdentityByRelation) {
-				q = "match " + referenceMatchByRelation(other) + "\n" + q;
+				q = `match ${referenceMatchByRelation(other)}\n${q}`;
 				other = other.identifier.vertex;
 			}
 			if (other instanceof Node || other instanceof Reference) {
-				q = "match " + nodeMatch(other) + "\n" + q;
+				q = `match ${nodeMatch(other)}\n${q}`;
 				p[other.__key] = other.identifier;
 			}
-			q += "match " + referenceMatchByRelation(n) + "\n";
-			q += "set " + n.__key + ' ' + operator + ' {' + n.__key + '}\n';
+			q += `match ${referenceMatchByRelation(n)}\n`;
+			q += `set ${n.__key} ${operator} {${n.__key}}\n`;
 			p[n.__key] = n.data;
 
 			// will only set relation data for the relation referenced directly by the node - adding reldata to any referenced node-by-relation will not be set here but in the specific query for that node-by-relation, and ref-by-relation cannot hold any data on the relation or the node
 			if (n.identifier.data) {
 				var reldkey = n.__key + n.identifier.vertex.__key;
 				p[reldkey] = n.identifier.data;
-				q += "set " + reldkey + " " + operator + " {" + reldkey + "}\n";
+				q += `set ${reldkey} ${operator} {${reldkey}}\n`;
 			}
 			queries.push({ query: q, params: p });
 		}
 
 		var handleBundle = function (r, fr, to) {
 			// handle node-relation-node bundle
-			var m = "match " + nodeMatch(fr) + "-" + relationRef(r) + "->" + nodeMatch(to) + "\n",
-				s = 'set ' + r.__key + ' ' + operator + ' {' + r.__key + '}',
+			var m = `match ${nodeMatch(fr)}-${relationRef(r)}->${nodeMatch(to)}\n`,
+				s = `set ${r.__key} ${operator} {${r.__key}}`,
 				p = {};
 			p[r.__key] = r.data;
 
 			[fr, to].forEach(function (n) {
 				if (n instanceof Node) {
-					s += ', ' + n.__key + ' ' + operator + ' {' + n.__key + '$data}';
-					p[n.__key + '$data'] = n.data;
+					s += `, ${n.__key} ${operator} {${n.__key}$data}`;
+					p[`${n.__key}$data`] = n.data;
 				}
 				p[n.__key] = n.identifier;
 			});
@@ -422,8 +428,8 @@ module.exports = function (settings, init_callback) {
 
 		var handleRelation = function (r) {
 			// handle relation
-			var m = "match " + nodeMatch(r.from) + "-" + relationRef(r) + "->" + nodeMatch(r.to) + "\n",
-				s = 'set ' + r.__key + ' ' + operator + ' {' + r.__key + '}\n',
+			var m = `match ${nodeMatch(r.from)}-${relationRef(r)}->${nodeMatch(r.to)}\n`,
+				s = `set ${r.__key} ${operator} {${r.__key}}\n`,
 				p = {};
 			p[r.__key] = r.data;
 			p[r.to.__key] = r.to.identifier;
@@ -437,8 +443,8 @@ module.exports = function (settings, init_callback) {
 		iterateDbSet(dbSet, handleReference, handleReferenceByRelation, handleNode, handleNodeByRelation, handleBundle, handleRelation, returnHandler, function (errors) {
 			if (logging === 'verbose') {
 				queries.forEach(function (q) {
-					console.log('\ncypher:', '\n' + q.query);
-					console.log(JSON.stringify(q.params, null, 2) + '\n');
+					console.log('\ncypher:', `\n${q.query}`);
+					console.log(`${JSON.stringify(q.params, null, 2)}\n`);
 				});
 			}
 
@@ -458,8 +464,8 @@ module.exports = function (settings, init_callback) {
 
 		var handleNode = function (n) {
 			// handle node
-			var m = 'match ' + nodeMatch(n) + '\n',
-				d = delPrefix + 'delete ' + n.__key + '\n',
+			var m = `match ${nodeMatch(n)}\n`,
+				d = `${delPrefix}delete ${n.__key}\n`,
 				p = {};
 			p[n.__key] = n.identifier;
 
@@ -470,22 +476,22 @@ module.exports = function (settings, init_callback) {
 			var other = n.identifier.vertex, q = "", p = {};
 
 			while (other && other.identifier instanceof IdentityByRelation) {
-				q = "match " + referenceMatchByRelation(other) + "\n" + q;
+				q = `match ${referenceMatchByRelation(other)}\n${q}`;
 				other = other.identifier.vertex;
 			}
 			if (other instanceof Node || other instanceof Reference) {
-				q = "match " + nodeMatch(other) + "\n" + q;
+				q = `match ${nodeMatch(other)}\n${q}`;
 				p[other.__key] = other.identifier;
 			}
-			q += "match " + referenceMatchByRelation(n) + "\n";
-			q += delPrefix + "delete " + n.__key;
+			q += `match ${referenceMatchByRelation(n)}\n`;
+			q += `${delPrefix}delete ${n.__key}\n`;
 			queries.push({ query: q, params: p });
 		}
 
 		var handleBundle = function (r, fr, to) {
 			// handle node-relation-node bundle
-			var m = "match " + nodeMatch(fr) + "-" + relationRef(r) + "->" + nodeMatch(to) + "\n",
-				d = delPrefix + 'delete ' + r.__key,
+			var m = `match ${nodeMatch(fr)}-${relationRef(r)}->${nodeMatch(to)}\n`,
+				d = `${delPrefix}delete ${r.__key}`,
 				p = {};
 
 			[fr, to].forEach(function (n) {
@@ -495,13 +501,13 @@ module.exports = function (settings, init_callback) {
 				}
 			});
 
-			queries.push({ query: m + d + '\n', params: p });
+			queries.push({ query: `${m}${d}\n`, params: p });
 		};
 
 		var handleRelation = function (r) {
 			// handle relation
-			var m = "match " + nodeMatch(r.from) + "-" + relationRef(r) + "->" + nodeMatch(r.to) + "\n",
-				d = delPrefix + 'delete ' + r.__key + '\n',
+			var m = `match ${nodeMatch(r.from)}-${relationRef(r)}->${nodeMatch(r.to)}\n`,
+				d = `${delPrefix}delete ${r.__key}\n`,
 				p = {};
 			p[r.to.__key] = r.to.identifier;
 			p[r.from.__key] = r.from.identifier;
@@ -516,8 +522,8 @@ module.exports = function (settings, init_callback) {
 
 			if (logging === 'verbose') {
 				queries.forEach(function (q) {
-					console.log('\ncypher:', '\n' + q.query);
-					console.log(JSON.stringify(q.params, null, 2) + '\n');
+					console.log('\ncypher:', `\n${q.query}`);
+					console.log(`${JSON.stringify(q.params, null, 2)}\n`);
 				});
 			}
 
@@ -547,7 +553,7 @@ module.exports = function (settings, init_callback) {
 		// drop constraints added by this instance - only intended for testing purposes when schemas have been created and need to be dropped again at the end of the test
 		var constraints = [];
 		for (var index in schema.indices) {
-			constraints.push({ query: "DROP CONSTRAINT ON (n:" + index + ") ASSERT n." + schema.indices[index].id + " IS UNIQUE" })
+			constraints.push({ query: `DROP CONSTRAINT ON (n:${index}) ASSERT n.${schema.indices[index].id} IS UNIQUE` })
 		}
 		console.warn('\n*** dropping trinity4j schema ***\n');
 		neo4j.runMultipleStatements({ queries: constraints, includeStats: true }, function (e, r) {
@@ -771,19 +777,19 @@ module.exports = function (settings, init_callback) {
 	}
 
 	Node.prototype.toString = function () {
-		return "Node(" + this.label + ":" + this.identifier + ") ~data:" + Object.keys(this.data || {}).length;
+		return `Node(${this.label}:${this.identifier}) ~data:${Object.keys(this.data || {}).length}`;
 	}
 
 	Reference.prototype.toString = function () {
-		return "Reference(" + this.label.toString() + ":" + this.identifier.toString() + ")";
+		return `Reference(${this.label.toString()}:${this.identifier.toString()})`;
 	}
 
 	IdentityByRelation.prototype.toString = function () {
-		return "ByRelation(" + this.type + this.direction + this.vertex.toString() + ")" + (this.data ? " ~data:" + Object.keys(this.data).length : "");
+		return `ByRelation(${this.type}${this.direction}${this.vertex.toString()})${(this.data ? ` ~data:${Object.keys(this.data).length}` : "")}`;
 	}
 
 	Relation.prototype.toString = function () {
-		return "Relation(" + this.from.label.toString() + ":" + this.from.identifier.toString() + " -[" + this.type.toString() + "]-> " + this.to.label.toString() + ":" + this.to.identifier.toString() + ") ~data:" + Object.keys(this.data || {}).length;
+		return `Relation(${this.from.label.toString()}:${this.from.identifier.toString()} -[${this.type.toString()}]-> ${this.to.label.toString()}:${this.to.identifier.toString()}) ~data:${Object.keys(this.data || {}).length}`;
 	}
 
 	DbSet.prototype.toString = function () {
@@ -827,25 +833,30 @@ module.exports = function (settings, init_callback) {
 	}
 
 
-	var nodeCreate = (n) => "(" + n.__key + ":" + n.label + " {" + n.__key + "})";
+	var nodeCreate = (n) => `(${n.__key}:${n.label} {${n.__key}})`;
 	var nodeMatch = function (n) {
-		var index = getIndex(n.label);
-		return "(" + n.__key + (n.label === label_all ? "" : ":" + n.label) + (n.identifier === ref_all_id ? ")" : tc.verify.is(n.identifier, Array) ? ") where " + n.__key + "." + (index ? index.id : undefined) + " in {" + n.__key + "}" : " {" + getIndex(n.label).id + ": { " + n.__key + " } })");
-		// is this too complex to read? could be refactored to something like "if n.identifier is Array, else if n.identifier === ref_all_id, else ..", where the n.label === label_all check is done in all scenarios. But I kinda like the oneliner structure.
+		var index = getIndex(n.label),
+			ending = n.identifier === ref_all_id
+				? ")"
+				: tc.verify.is(n.identifier, Array)
+					? `) where ${n.__key}.${(index ? index.id : undefined)} in {${n.__key}}`
+					: ` {${index.id}: { ${n.__key} } })`;
+		return `(${n.__key}${(n.label === label_all ? "" : `:${n.label}`)}${ending}`;
+		// is this too complex to read? could be refactored to something like "if n.identifier is Array, else if n.identifier === ref_all_id, else ..", where the n.label === label_all check is done in all scenarios.
 	}
-	var nodeRef = (n) => "(" + n.__key + ")";
-	var nodeMerge = (n) => '(' + n.__key + ':' + n.label + ' {' + getIndex(n.label).id + ':' + JSON.stringify(n.identifier) + '})' + onCreateSet(n);
+	var nodeRef = (n) => `(${n.__key})`;
+	var nodeMerge = (n) => `(${n.__key}:${n.label} {${getIndex(n.label).id}:${JSON.stringify(n.identifier)}})${onCreateSet(n)}`;
 	var referenceMatchByRelation = function (n, id) {
 		id = id || n.identifier;
 		var dir = id.direction;
 		if (dir !== '<-' && dir !== '->') return "";
 
-		var matchThis = "(" + n.__key + ":" + n.label + ")",
-			matchThat = "(" + id.vertex.__key + ")";
-		return (dir === '<-' ? matchThat : matchThis) + "-[" + getRelationKey(n, id) + (id.type === type_all ? "" : ":" + id.type) + "]->" + (dir === '->' ? matchThat : matchThis);
+		var matchThis = `(${n.__key}:${n.label})`,
+			matchThat = `(${id.vertex.__key})`;
+		return `${(dir === '<-' ? matchThat : matchThis)}-[${getRelationKey(n, id)}${(id.type === type_all ? "" : ":" + id.type)}]->${(dir === '->' ? matchThat : matchThis)}`;
 	}
-	var relationCreate = (r) => "[" + r.__key + (r.type === type_all ? "" : ":" + r.type) + (r.data ? " {" + r.__key + "}" : "") + "]";
-	var relationRef = (r) => "[" + r.__key + (r.type === type_all ? "" : ":" + r.type) + "]";
+	var relationCreate = (r) => `[${r.__key}${(r.type === type_all ? "" : ":" + r.type)}${(r.data ? `{${r.__key}}` : "")}]`;
+	var relationRef = (r) => `[${r.__key}${(r.type === type_all ? "" : ":" + r.type)}]`;
 
 	var getIdentifier = function (label, data) {
 		var index = getIndex(label).id;
@@ -984,7 +995,7 @@ module.exports = function (settings, init_callback) {
 
 			// we need to add "match" clauses first, then we try to jointly add nodes and relations, and lastly any remaining relations will be inserted as creates - thus this order
 			while (obj = dbSet.dump('reference') || dbSet.dump('node') || dbSet.dump('relation')) {
-				key = "n" + (++i);
+				key = `n${(++i)}`;
 				obj.__key = key;
 				all.push(obj);
 			}
@@ -1004,7 +1015,7 @@ module.exports = function (settings, init_callback) {
 				}
 
 				if (n instanceof Reference) {
-					console.log('handling ref ' + n.__key);
+					console.log(`handling ref ${n.__key}`);
 					n.identifier = n.identifier instanceof IdentityByRelation ? [n.identifier] : n.identifier;
 					if (tc.verify.is(n.identifier, Array) && tc.verify.is(refByRelHandler, Function)) {
 						if (!n.identifier.some((id) => {
@@ -1128,7 +1139,7 @@ module.exports = function (settings, init_callback) {
 			if (tc.verify.is(e, String))
 				errors.push(e);
 			else if (e && e.message && tc.verify.is(e.message, String))
-				errors.push('[' + e.code + '] ' + e.message);
+				errors.push(`[${e.code}]${e.message}`);
 		});
 		return errors;
 	}
@@ -1141,7 +1152,7 @@ module.exports = function (settings, init_callback) {
 			if (data[key]) {
 				if (str.length > 0)
 					str += ', ';
-				str += n.__key + '.' + key + ' = ' + JSON.stringify(data[key]);
+				str += `${n.__key}.${key} = ${JSON.stringify(data[key])}`;
 			}
 		}
 		return (str.length > 0 ? ' on create set ' : '') + str;

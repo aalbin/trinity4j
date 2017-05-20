@@ -39,7 +39,7 @@ module.exports = function (connection, callback) {
 		},
 			function (err, res, body) {
 				var ms = Math.abs(new Date() - before);
-				console.log('[neo4j response time: ' + ms + 'ms]');
+				console.log(`[neo4j response time: ${ms}ms]`);
 				if (err && !tc.verify.is(err, Array)) {
 					err = [err];
 				}
@@ -76,13 +76,13 @@ module.exports = function (connection, callback) {
 				statements.push({ statement: q.query, parameters: q.params, includeStats: includeStats, resultDataContents: resultDataContents });
 			}
 		});
-		
+
 		request.post({
 			uri: url,
 			json: { statements: statements }
 		}, function (err, res, body) {
 			var ms = Math.abs(new Date() - before);
-			console.log('[neo4j response time: ' + ms + 'ms]');
+			console.log(`[neo4j response time: ${ms}ms]`);
 
 			if (err && !tc.verify.is(err, Array)) {
 				err = [err];
@@ -129,7 +129,7 @@ module.exports = function (connection, callback) {
 
 		// testing on an average response object resulted in a recording of 0ms - so this is not a big deal performance wise but very nice when working with the response objects..
 		if (resp.errors && resp.errors.length > 0) {
-			console.error('errors: ' + JSON.stringify(resp.errors));
+			console.error(`errors: ${JSON.stringify(resp.errors)}`);
 			return null;
 		}
 
@@ -176,7 +176,7 @@ module.exports = function (connection, callback) {
 			return;
 		}
 
-		var httpUrlForTransaction = 'http://' + un + ':' + pw + '@' + host + ':' + port + path;
+		var httpUrlForTransaction = `http://${un}:${pw}@${host}:${port}${path}`;
 
 		return httpUrlForTransaction;
 	}
